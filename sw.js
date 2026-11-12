@@ -3,7 +3,7 @@
    - It only ever handles GET requests to THIS site (the page, config.js, icons).
    - Your Apps Script API (a different origin, and POST) and Google Fonts are never touched.
    - Network first, cache as a fallback: after you publish an update, people get it on the next load. */
-const CACHE = 'pulse-shell-v1';
+const CACHE = 'pulse-shell-v2';
 const SHELL = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
