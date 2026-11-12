@@ -1595,11 +1595,19 @@ window.addEventListener('popstate', e => {
 });
 
 boot();
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js');
-    });
+
+if ('serviceWorker' in navigator) {
+  const registerSW = () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.error('SW registration failed:', err));
+  };
+
+  if (document.readyState === 'complete') {
+    registerSW();
+  } else {
+    window.addEventListener('load', registerSW);
   }
+}
 </script>
 </body>
 </html>
