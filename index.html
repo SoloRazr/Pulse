@@ -310,6 +310,7 @@ main {
 .member-main .name { font-family: var(--font-display); font-weight: 700; font-size: .95rem; overflow-wrap: anywhere; }
 .avatar.hue { background: hsl(var(--hue) 70% 92%); color: hsl(var(--hue) 55% 30%); box-shadow: none; }
 @media (prefers-color-scheme: dark) { .avatar.hue { background: hsl(var(--hue) 35% 22%); color: hsl(var(--hue) 70% 85%); } }
+.load-more { align-self: center; margin: 4px 0 8px; min-width: 180px; }
 .list-note { text-align: center; color: var(--muted); font-size: .8rem; padding: 4px; }
 
 /* Rich text, pill, tag filter, counter */
@@ -597,6 +598,7 @@ let currentFeed = 'chronological', viewingProfileHandle = null;
 let activeReplyPostId = null, editingPostId = null, loaded = false, snapshot = '';
 let tab = 'home', threadPostId = null, searchQuery = '', searchMode = 'members', searchIds = [], searchDone = '', searchSeq = 0, searchTimer = null;
 let activity = { items: [], unread: 0, seen: '' }, activitySeenPrev = '', extraPosts = {}, threadFocus = false, threadError = '';
+let hasMore = false, loadingMore = false, profileMore = {};
 let chain = Promise.resolve(), pending = 0;
 const idMap = {};
 const realId = (id) => idMap[id] || id;
@@ -657,7 +659,11 @@ async function fetchData() {
   return res;
 }
 function applyData(res, fromCache) {
-  me = res.me; me.following = me.following || []; me.circle = me.circle || []; users = res.users || {}; users[me.handle] = me; posts = res.posts || [];
+  me = res.me; me.following = me.following || []; me.circle = me.circle || [];
+  // keep what we already know about authors of older pages we loaded; fresh data wins
+  users = Object.assign({}, fromCache ? {} : users, res.users || {}); users[me.handle] = me;
+  if (fromCache) { posts = res.posts || []; hasMore = !!res.hasMore; }
+  else mergeFirstPage(res.posts || [], !!res.hasMore);
   directory = res.directory || [];
   activity = res.activity || { items: [], unread: 0, seen: '' };
   dirMap = {};
@@ -692,7 +698,7 @@ async function boot() {
 function signOut(msg) {
   clearToken(); clearCache(); clearDraft(); token = ''; me = null; users = {}; posts = []; directory = []; dirMap = {}; loaded = false;
   activeTag = null; draftRestored = false; showPill(0);
-  tab = 'home'; threadPostId = null; extraPosts = {}; searchQuery = ''; searchIds = []; activity = { items: [], unread: 0, seen: '' };
+  tab = 'home'; threadPostId = null; extraPosts = {}; hasMore = false; profileMore = {}; searchQuery = ''; searchIds = []; activity = { items: [], unread: 0, seen: '' };
   $('postContent').value = ''; updateComposerMeta();
   viewingProfileHandle = null; activeReplyPostId = null;
   closeAllModals();
@@ -1106,11 +1112,15 @@ function renderTimeline(filterHandle) {
     if (currentFeed === 'chronological' || filterHandle) return toTime(b.timestamp) - toTime(a.timestamp);
     return (rankScore(b) - rankScore(a)) || (toTime(b.timestamp) - toTime(a.timestamp));
   });
+  const more = filterHandle ? !!profileMore[String(filterHandle).toLowerCase()] : hasMore;
+  const moreHTML = more
+    ? `<button class="btn-secondary load-more" data-action="load-more"${loadingMore ? ' disabled' : ''}>${loadingMore ? 'Loading…' : 'Load older posts'}</button>`
+    : (list.length ? '<div class="list-note">You’re all caught up</div>' : '');
   if (!list.length) {
-    timeline.innerHTML = '<div class="empty">' + (activeTag ? 'No posts with #' + esc(activeTag) + ' yet.' : filterHandle ? 'No visible posts from this account.' : 'No visible posts yet. Write the first one above.') + '</div>';
+    timeline.innerHTML = '<div class="empty">' + (activeTag ? 'No loaded posts with #' + esc(activeTag) + ' yet.' : filterHandle ? 'No visible posts from this account.' : 'No visible posts yet. Write the first one above.') + '</div>' + (more ? moreHTML : '');
     return;
   }
-  timeline.innerHTML = list.map(postCardHTML).join('');
+  timeline.innerHTML = list.map(postCardHTML).join('') + moreHTML;
 }
 
 /* ---------- post actions ---------- */
@@ -1189,6 +1199,48 @@ function switchFeed(type) {
   rerender();
 }
 
+/* ---------- paging: "Load older posts" ---------- */
+const olderThan = (p, k) => p.timestamp < k.t || (p.timestamp === k.t && String(p.id) < k.id);
+const keyOlder = (a, b) => a.t < b.t || (a.t === b.t && a.id < b.id);   // cursor vs cursor
+function oldestKey(list) {            // the cursor: (timestamp, id) of the oldest saved post we hold
+  let best = null;
+  list.forEach(p => {
+    if (isTmp(p.id)) return;
+    const k = { t: p.timestamp, id: String(p.id) };
+    if (!best || keyOlder(k, best)) best = k;
+  });
+  return best;
+}
+// A refresh brings the newest page. Keep the older pages already loaded so the feed does not collapse.
+function mergeFirstPage(fresh, serverHasMore) {
+  const have = new Set(fresh.map(p => String(p.id))), edge = oldestKey(fresh);
+  const older = edge ? posts.filter(p => !isTmp(p.id) && !have.has(String(p.id)) && olderThan(p, edge)) : [];
+  posts = fresh.concat(older);
+  hasMore = older.length ? hasMore : serverHasMore;
+}
+async function loadMore() {
+  if (loadingMore) return;
+  const handle = viewingProfileHandle, key = handle ? String(handle).toLowerCase() : '';
+  if (!(handle ? profileMore[key] : hasMore)) return;
+  const before = oldestKey(handle ? allPosts().filter(p => p.handle === handle) : posts);
+  loadingMore = true; rerender();
+  try {
+    const res = await api(handle ? { action: 'GET_PROFILE', token, handle, before } : { action: 'LOAD_MORE', token, before });
+    if (res.status !== 'success') throw res;
+    ingestUsers(res.users);
+    if (handle) { ingestPosts(res.posts); profileMore[key] = !!res.hasMore; }
+    else {
+      const have = new Set(posts.map(p => String(p.id)));
+      (res.posts || []).forEach(p => { if (!have.has(String(p.id))) posts.push(p); });
+      hasMore = !!res.hasMore;
+    }
+  } catch (err) {
+    if (err && err.code === 'AUTH') { signOut(err.message); return; }
+    setStatus('error', (err && err.message) || 'Could not load older posts. Tap to retry.');
+  }
+  loadingMore = false; rerender();
+}
+
 /* ---------- trust ranking, merging server data ---------- */
 const trustOf = (u) => (u && typeof u.trust === 'number') ? u.trust : 50;
 // "Top Trust": constructive reactions x author trust, with a gentle decay so fresh posts can surface
@@ -1223,6 +1275,13 @@ async function ensureProfile(handle) {
     ingestUsers(res.users);
     ingestUsers({ [res.user.handle]: res.user });
     ingestPosts(res.posts);
+    const pkey = String(handle).toLowerCase();
+    profileMore[pkey] = !!res.hasMore;
+    const edge = oldestKey(res.posts || []), held = allPosts().filter(p => String(p.handle).toLowerCase() === pkey);
+    if (edge && held.some(p => olderThan(p, edge))) { // we already hold a deeper slice (loaded via the feed): ask what lies beyond it
+      const r2 = await api({ action: 'GET_PROFILE', token, handle, before: oldestKey(held) });
+      if (r2.status === 'success') { ingestUsers(r2.users); ingestPosts(r2.posts); profileMore[pkey] = !!r2.hasMore; }
+    }
     if (!threadPostId && viewingProfileHandle && viewingProfileHandle.toLowerCase() === String(handle).toLowerCase()) rerender();
   } catch (e) { /* the profile still shows what we already have */ }
 }
@@ -1404,7 +1463,7 @@ function saveCache() {
     keep.forEach(p => { need[p.handle] = 1; (p.replies || []).forEach(r => { need[r.handle] = 1; }); });
     const u = {};
     Object.keys(need).forEach(h => { if (users[h]) u[h] = users[h]; });
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ me, users: u, posts: keep, directory, activity }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ me, users: u, posts: keep, directory, activity, hasMore: hasMore || posts.filter(p => !isTmp(p.id)).length > keep.length }));
   } catch (e) { /* storage full or blocked: skip caching */ }
 }
 function readCache() {
@@ -1532,6 +1591,7 @@ function runAction(el) {
   else if (a === 'thread-reply') submitThreadReply(id);
   else if (a === 'react') toggleReaction(id, el.dataset.kind);
   else if (a === 'search-mode') setSearchMode(el.dataset.mode);
+  else if (a === 'load-more') loadMore();
   else if (a === 'recirculate') toggleRecirculate(id);
   else if (a === 'edit') editPost(id);
   else if (a === 'history') showHistory(id);
