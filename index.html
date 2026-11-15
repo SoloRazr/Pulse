@@ -72,6 +72,7 @@ button { cursor: pointer; background: none; border: 0; }
 
 /* Unified rounded-stroke iconography */
 .icon-btn svg,
+.icon-tool-btn svg,
 .btn-secondary svg,
 .action-btn svg,
 .tab svg,
@@ -163,7 +164,7 @@ main {
 @media (prefers-color-scheme: dark) { .btn-secondary:hover { filter: brightness(1.12); } }
 .btn-secondary svg { width: 15px; height: 15px; stroke-width: 2; }
 .btn-danger { color: var(--danger); }
-.btn-primary:active, .btn-secondary:active, .action-btn:active, .seg button:active { transform: scale(.97); }
+.btn-primary:active, .btn-secondary:active, .action-btn:active, .seg button:active, .icon-tool-btn:active { transform: scale(.97); }
 .btn-sm { min-height: 36px; padding: 0 14px; }
 
 /* Sync status */
@@ -181,8 +182,33 @@ main {
 .composer { gap: 10px; padding-bottom: 12px; }
 .composer textarea { width: 100%; min-height: 76px; max-height: 260px; background: transparent; border: 0; outline: 0; font-size: 1rem; line-height: 1.5; resize: none; }
 .composer textarea::placeholder, .reply-composer input::placeholder { color: var(--subtle); }
-.composer-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: var(--hair) solid var(--line); padding-top: 12px; }
-.custom-select { background: var(--surface-2); border: 0; border-radius: var(--r-sm); min-height: 40px; padding: 0 12px; font-size: .9rem; max-width: 55%; cursor: pointer; }
+.composer-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: var(--hair) solid var(--line); padding-top: 12px; }
+.composer-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.custom-select { background: var(--surface-2); border: 0; border-radius: var(--r-sm); min-height: 40px; padding: 0 12px; font-size: .9rem; max-width: 100%; cursor: pointer; }
+.icon-tool-btn { width: 40px; height: 40px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background-color .15s, color .15s, transform .1s; }
+.icon-tool-btn:hover { background: var(--accent-soft); color: var(--accent); }
+.icon-tool-btn.active { background: var(--accent-soft); color: var(--accent); }
+.icon-tool-btn:disabled { opacity: .45; cursor: not-allowed; }
+.icon-tool-btn svg { width: 19px; height: 19px; stroke-width: 1.95; }
+
+/* Composer media preview & ALT input */
+.composer-media { display: flex; flex-direction: column; gap: 8px; background: var(--surface-2); border-radius: var(--r-md); padding: 10px; }
+.composer-preview-wrap { position: relative; border-radius: var(--r-sm); overflow: hidden; background: var(--bg); }
+.composer-preview-wrap img { width: 100%; max-height: 300px; object-fit: cover; display: block; }
+.remove-media-btn {
+  position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(15, 23, 42, 0.76); color: #ffffff;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  font-size: 1.25rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .1s, background-color .15s;
+}
+.remove-media-btn:hover { background: rgba(15, 23, 42, 0.92); }
+.remove-media-btn:active { transform: scale(.93); }
+.alt-input-row { display: flex; align-items: center; gap: 8px; }
+.alt-tag-label { font-family: var(--font-display); font-size: .72rem; font-weight: 700; color: var(--muted); background: var(--surface); padding: 4px 8px; border-radius: 6px; box-shadow: var(--shadow-sm); flex-shrink: 0; }
+.alt-input-row input { flex: 1; min-width: 0; min-height: 38px; padding: 0 10px; background: var(--surface); border: 0; border-radius: var(--r-sm); outline: 0; font-size: .9rem; transition: box-shadow .15s; }
+.alt-input-row input:focus { box-shadow: inset 0 0 0 2px var(--accent); }
+.alt-input-row input::placeholder { color: var(--subtle); }
 
 /* Posts */
 .timeline { display: flex; flex-direction: column; gap: 14px; }
@@ -201,6 +227,21 @@ main {
 .edited-pill { font-size: .72rem; color: var(--muted); background: var(--surface-2); padding: 4px 10px; border-radius: 999px; flex-shrink: 0; transition: color .15s, background-color .15s; }
 .edited-pill:hover { color: var(--accent); background: var(--accent-soft); }
 .post-content { font-size: 1rem; line-height: 1.52; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Post media attachment */
+.post-media { position: relative; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); border: var(--hair) solid var(--line); }
+.post-media img { width: 100%; max-height: 460px; object-fit: cover; display: block; cursor: zoom-in; }
+.alt-badge {
+  position: absolute; bottom: 10px; left: 10px; min-height: 26px; padding: 0 9px; border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78); color: #ffffff;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  font-family: var(--font-display); font-size: .7rem; font-weight: 700; letter-spacing: .04em;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background-color .15s, transform .1s;
+}
+.alt-badge:hover { background: rgba(15, 23, 42, 0.94); }
+.alt-badge:active { transform: scale(.95); }
+
 .post-actions { display: flex; justify-content: flex-start; gap: 2px; flex-wrap: wrap; border-top: var(--hair) solid var(--line); padding-top: 4px; margin: 0 -8px -8px; }
 .action-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border-radius: var(--r-sm); color: var(--muted); font-size: .85rem; transition: color .15s, background-color .15s, transform .1s; }
 .action-btn svg { width: 17px; height: 17px; stroke-width: 1.9; }
@@ -366,6 +407,15 @@ main {
 .history-item { padding: 10px 0; border-bottom: var(--hair) solid var(--line); font-size: .95rem; overflow-wrap: anywhere; white-space: pre-wrap; }
 .history-item:last-child { border-bottom: 0; }
 .history-time { font-size: .75rem; color: var(--muted); margin-bottom: 2px; }
+.alt-modal-text { font-size: 1rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Full-screen image lightbox */
+.lightbox-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(7, 10, 16, 0.92); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); display: none; flex-direction: column; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
+.lightbox-overlay.open { display: flex; }
+.lightbox-close { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px; width: 42px; height: 42px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); color: #ffffff; font-size: 1.5rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; transition: background-color .15s; }
+.lightbox-close:hover { background: rgba(255, 255, 255, 0.24); }
+.lightbox-img { max-width: 100%; max-height: 76dvh; border-radius: var(--r-md); object-fit: contain; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65); }
+.lightbox-caption { max-width: 640px; color: #e2e8f0; font-size: .92rem; line-height: 1.45; text-align: center; background: rgba(255, 255, 255, 0.08); padding: 10px 14px; border-radius: var(--r-md); overflow-wrap: anywhere; }
 
 @media (min-width: 600px) {
   .modal-overlay { align-items: center; padding: 20px; }
@@ -472,12 +522,27 @@ main {
 
       <div class="card composer">
         <textarea id="postContent" rows="3" maxlength="500" placeholder="What's happening?"></textarea>
+        <div class="composer-media" id="composerMedia" hidden>
+          <div class="composer-preview-wrap">
+            <img id="composerPreviewImg" src="" alt="Selected image preview">
+            <button type="button" class="remove-media-btn" id="removeMediaBtn" aria-label="Remove image" title="Remove image">&times;</button>
+          </div>
+          <div class="alt-input-row">
+            <span class="alt-tag-label">ALT</span>
+            <input type="text" id="postAltInput" maxlength="300" placeholder="Describe this image for people with visual impairments…">
+          </div>
+        </div>
         <div class="composer-toolbar">
-          <select id="postAudience" class="custom-select" aria-label="Audience">
-            <option value="Public">🌐 Everyone</option>
-            <option value="Followers">🔒 Followers Only</option>
-            <option value="Circle">👥 Close Circle</option>
-          </select>
+          <div class="composer-left">
+            <button type="button" class="icon-tool-btn" id="addImageBtn" title="Attach image (compressed to 1024px)" aria-label="Attach image">
+              <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </button>
+            <select id="postAudience" class="custom-select" aria-label="Audience">
+              <option value="Public">🌐 Everyone</option>
+              <option value="Followers">🔒 Followers Only</option>
+              <option value="Circle">👥 Close Circle</option>
+            </select>
+          </div>
           <span class="char-count" id="charCount"></span>
           <button class="btn-primary" id="publishBtn" disabled>Publish</button>
         </div>
@@ -550,7 +615,8 @@ main {
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
     <div class="modal-header"><h3 id="editModalTitle">Edit Post</h3><button class="close-btn" data-close aria-label="Close">&times;</button></div>
     <form id="editPostForm">
-      <div class="form-group"><label for="editPostInput">Changes are recorded transparently</label><textarea id="editPostInput" rows="5" maxlength="500" required></textarea></div>
+      <div class="form-group"><label for="editPostInput">Changes are recorded transparently</label><textarea id="editPostInput" rows="5" maxlength="500"></textarea></div>
+      <div class="form-group" id="editAltGroup" hidden><label for="editAltInput">Image ALT description</label><input type="text" id="editAltInput" maxlength="300" placeholder="Describe this image for accessibility…"></div>
       <div class="auth-error" id="editError" role="alert" hidden></div>
       <button type="submit" class="btn-primary">Save Edit</button>
     </form>
@@ -561,6 +627,13 @@ main {
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
     <div class="modal-header"><h3 id="historyModalTitle">Revision History</h3><button class="close-btn" data-close aria-label="Close">&times;</button></div>
     <div id="modalHistoryContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="altModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="altModalTitle">
+    <div class="modal-header"><h3 id="altModalTitle">Image Description (ALT)</h3><button class="close-btn" data-close aria-label="Close">&times;</button></div>
+    <p class="alt-modal-text" id="altModalText"></p>
   </div>
 </div>
 
@@ -583,7 +656,14 @@ main {
   </div>
 </div>
 
+<div class="lightbox-overlay" id="lightboxModal" role="dialog" aria-modal="true" aria-label="Image viewer">
+  <button type="button" class="lightbox-close" data-close aria-label="Close image">&times;</button>
+  <img class="lightbox-img" id="lightboxImg" src="" alt="">
+  <div class="lightbox-caption" id="lightboxCaption" hidden></div>
+</div>
+
 <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+<input type="file" id="postImageInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">
 
 <script src="config.js"></script>
 <script>
@@ -595,6 +675,7 @@ const TOKEN_KEY = 'pulse_device_token';
 const CACHE_KEY = 'pulse_feed_cache';
 const DRAFT_KEY = 'pulse_draft';
 const MAX_POST = 500;
+const MAX_IMAGE_DIM = 1024;
 const $ = (id) => document.getElementById(id);
 
 const ICON_REPLY = '<svg viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>';
@@ -620,6 +701,8 @@ let tab = 'home', threadPostId = null, searchQuery = '', searchMode = 'members',
 let activity = { items: [], unread: 0, seen: '' }, activitySeenPrev = '', extraPosts = {}, threadFocus = false, threadError = '';
 let hasMore = false, loadingMore = false, profileMore = {};
 let peopleModalHandle = null, peopleModalTab = 'followers', circleModalSnapshot = [];
+let pendingMedia = null, compressingMedia = false;
+const localMediaPreviews = {};
 let chain = Promise.resolve(), pending = 0;
 const idMap = {};
 const realId = (id) => idMap[id] || id;
@@ -648,6 +731,14 @@ const userOf = (h) => users[h] || { handle: h, name: String(h).replace('@', ''),
 const initial = (u) => (String(u.name || u.handle || 'U').trim().charAt(0) || 'U').toUpperCase();
 const safeImg = (s) => /^data:image\//.test(s || '') ? s : '';
 const isTmp = (id) => String(id).indexOf('tmp_') === 0;
+
+function mediaSrc(m, size) {
+  if (!m) return '';
+  if (m.previewUrl) return m.previewUrl;
+  if (m.id && localMediaPreviews[m.id]) return localMediaPreviews[m.id];
+  if (!m.id) return '';
+  return `https://lh3.googleusercontent.com/d/${encodeURIComponent(m.id)}=w${size || 1024}`;
+}
 
 function dirEntry(handle) {
   const canon = dirMap[String(handle).toLowerCase()];
@@ -727,7 +818,8 @@ async function boot() {
 }
 
 function signOut(msg) {
-  clearToken(); clearCache(); clearDraft(); token = ''; me = null; users = {}; posts = []; directory = []; dirMap = {}; loaded = false;
+  clearToken(); clearCache(); clearDraft(); clearComposerMedia();
+  token = ''; me = null; users = {}; posts = []; directory = []; dirMap = {}; loaded = false;
   activeTag = null; draftRestored = false; showPill(0);
   tab = 'home'; threadPostId = null; extraPosts = {}; hasMore = false; profileMore = {}; searchQuery = ''; searchIds = []; activity = { items: [], unread: 0, seen: '' };
   peopleModalHandle = null; circleModalSnapshot = [];
@@ -932,6 +1024,97 @@ function handleAvatarUpload(event) {
   };
   reader.readAsDataURL(file);
   input.value = '';
+}
+
+/* ---------- post image compression (1024px max, WebP w/ JPEG fallback) ---------- */
+function compressPostImage(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) throw new Error('Invalid image dimensions.');
+        if (w > MAX_IMAGE_DIM || h > MAX_IMAGE_DIM) {
+          if (w >= h) { h = Math.round(h * (MAX_IMAGE_DIM / w)); w = MAX_IMAGE_DIM; }
+          else { w = Math.round(w * (MAX_IMAGE_DIM / h)); h = MAX_IMAGE_DIM; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        let q = 0.82;
+        let dataUrl = canvas.toDataURL('image/webp', q);
+        const useWebp = dataUrl.indexOf('data:image/webp') === 0;
+
+        if (!useWebp) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          dataUrl = canvas.toDataURL('image/jpeg', q);
+        }
+        while (dataUrl.length > 1350000 && q > 0.35) {
+          q -= 0.12;
+          dataUrl = canvas.toDataURL(useWebp ? 'image/webp' : 'image/jpeg', q);
+        }
+        resolve({ dataUrl, previewUrl: objectUrl });
+      } catch (err) {
+        URL.revokeObjectURL(objectUrl);
+        reject(err);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Could not read that image.'));
+    };
+    img.src = objectUrl;
+  });
+}
+
+function clearComposerMedia(keepPreviewUrl) {
+  if (pendingMedia && pendingMedia.previewUrl && !keepPreviewUrl) {
+    try { URL.revokeObjectURL(pendingMedia.previewUrl); } catch (e) {}
+  }
+  pendingMedia = null;
+  compressingMedia = false;
+  $('composerMedia').hidden = true;
+  $('composerPreviewImg').src = '';
+  $('postAltInput').value = '';
+  $('addImageBtn').classList.remove('active');
+  $('addImageBtn').disabled = false;
+  updateComposerMeta();
+}
+
+async function handlePostImageSelect(event) {
+  const input = event.target, file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { setStatus('error', 'Please choose an image file.'); return; }
+
+  compressingMedia = true;
+  $('addImageBtn').disabled = true;
+  updateComposerMeta();
+  setStatus('busy', 'Compressing image…');
+  try {
+    const compressed = await compressPostImage(file);
+    if (pendingMedia && pendingMedia.previewUrl) {
+      try { URL.revokeObjectURL(pendingMedia.previewUrl); } catch (e) {}
+    }
+    pendingMedia = compressed;
+    $('composerPreviewImg').src = compressed.previewUrl;
+    $('composerMedia').hidden = false;
+    $('addImageBtn').classList.add('active');
+    setStatus('ok', 'Image ready (1024px)');
+    setTimeout(() => $('postAltInput').focus(), 40);
+  } catch (err) {
+    setStatus('error', (err && err.message) || 'Could not process that image.');
+  } finally {
+    compressingMedia = false;
+    $('addImageBtn').disabled = false;
+    updateComposerMeta();
+  }
 }
 
 /* ---------- follow + circle ---------- */
@@ -1175,6 +1358,20 @@ const reactionDef = (k) => REACTION_DEFS.find(r => r.k === k) || {
   label: String(k)
 };
 
+function postMediaHTML(post, id) {
+  const m = post.media;
+  if (!m || (!m.id && !m.previewUrl)) return '';
+  const src = mediaSrc(m, 1024);
+  const alt = m.alt ? esc(m.alt) : 'Post image';
+  const fallback = m.id
+    ? ` onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src='https://drive.google.com/thumbnail?id=${esc(m.id)}&sz=w1024';}"`
+    : '';
+  const altBtn = m.alt
+    ? `<button type="button" class="alt-badge" data-action="show-alt" data-id="${id}" title="View image description" aria-label="View image description">ALT</button>`
+    : '';
+  return `<div class="post-media"><img src="${esc(src)}" alt="${alt}" loading="lazy" data-action="lightbox" data-id="${id}"${fallback}>${altBtn}</div>`;
+}
+
 function postCardHTML(post, opts) {
   opts = opts || {};
   const u = userOf(post.handle), isOwner = post.handle === me.handle, id = esc(post.id);
@@ -1193,12 +1390,13 @@ function postCardHTML(post, opts) {
       return `<button class="chip${on ? ' on' : ''}" data-action="react" data-id="${id}" data-kind="${r.k}" aria-pressed="${on}" title="${r.label}">${r.icon}<span>${r.label}</span>${n ? `<b>${n}</b>` : ''}</button>`;
     }).join('') + '</div>';
   }
+  const bodyHTML = post.content ? `<div class="post-content"${open}>${richText(post.content)}</div>` : '';
   return `<article class="card post-card${tmp ? ' pending' : ''}"><div class="post-header">${avatarHTML(u, true)}
     <div class="post-id"><div class="username-row"><button class="display-name" data-action="profile" data-handle="${esc(u.handle)}">${esc(u.name)}</button>
     <span class="handle">${esc(u.handle)}</span>${u.reputation ? `<span class="reputation-badge" title="Computed from the reactions this member's posts received">${esc(u.reputation)}</span>` : ''}</div>
     <div class="post-meta"${open}>${tmp ? 'Publishing…' : formatTime(post.timestamp)} • Audience: <span class="audience-pill${audCls}">${esc(aud)}</span></div></div>
     ${post.edits && post.edits.length ? `<button class="edited-pill" data-action="history" data-id="${id}" title="View edit history">Edited</button>` : ''}</div>
-    <div class="post-content"${open}>${richText(post.content)}</div>${reactions}
+    ${bodyHTML}${postMediaHTML(post, id)}${reactions}
     <div class="post-actions">
       <button class="action-btn" data-action="${opts.thread ? 'focus-reply' : 'reply'}" data-id="${id}">${ICON_REPLY}Reply (${replies.length})</button>
       <button class="action-btn${post.iRecirculated ? ' active' : ''}" data-action="recirculate" data-id="${id}">${ICON_RECIRC}Recirculate (${post.recirculates || 0})</button>
@@ -1231,21 +1429,39 @@ function renderTimeline(filterHandle) {
 /* ---------- post actions ---------- */
 function createPost() {
   const ta = $('postContent'), text = ta.value.trim();
-  if (!text) return;
+  const hasImg = !!(pendingMedia && pendingMedia.dataUrl);
+  if ((!text && !hasImg) || compressingMedia) return;
+
   const audience = $('postAudience').value;
-  const tmp = { id: 'tmp_' + Date.now(), handle: me.handle, content: text, timestamp: new Date().toISOString(), audience, recirculates: 0, iRecirculated: false, replies: [], edits: [] };
+  const altText = hasImg ? $('postAltInput').value.trim().slice(0, 300) : '';
+  const localPreview = hasImg ? pendingMedia.previewUrl : '';
+  const payloadMedia = hasImg ? { dataUrl: pendingMedia.dataUrl, alt: altText } : null;
+
+  const tmp = {
+    id: 'tmp_' + Date.now(), handle: me.handle, content: text, timestamp: new Date().toISOString(),
+    audience, recirculates: 0, iRecirculated: false, replies: [], edits: [],
+    media: hasImg ? { previewUrl: localPreview, alt: altText } : null
+  };
   posts.unshift(tmp);
-  ta.value = ''; autosize(ta); updateComposerMeta(); clearDraft();
+  ta.value = ''; autosize(ta); clearDraft();
+  clearComposerMedia(true); // keep localPreview alive so the pending post & newly saved post show it seamlessly
   rerender();
-  queue(() => ({ action: 'ADD_POST', content: text, audience }),
+
+  queue(() => ({ action: 'ADD_POST', content: text, audience, media: payloadMedia }),
     res => {
       idMap[tmp.id] = res.post.id;
+      if (res.post.media && res.post.media.id && localPreview) {
+        localMediaPreviews[res.post.media.id] = localPreview;
+      }
       if (threadPostId === tmp.id) threadPostId = res.post.id;
       const i = posts.indexOf(tmp);
       if (i > -1) posts[i] = res.post;
       rerender();
     },
-    () => { if (!ta.value) { ta.value = text; autosize(ta); updateComposerMeta(); saveDraft(); } });
+    () => {
+      if (!ta.value && text) { ta.value = text; autosize(ta); updateComposerMeta(); saveDraft(); }
+      if (localPreview) { try { URL.revokeObjectURL(localPreview); } catch (e) {} }
+    });
 }
 
 function toggleRecirculate(id) {
@@ -1263,6 +1479,14 @@ function editPost(id) {
   if (!p || isTmp(id)) return;
   editingPostId = p.id;
   $('editPostInput').value = p.content;
+  $('editPostInput').required = !p.media;
+  if (p.media) {
+    $('editAltGroup').hidden = false;
+    $('editAltInput').value = p.media.alt || '';
+  } else {
+    $('editAltGroup').hidden = true;
+    $('editAltInput').value = '';
+  }
   $('editError').hidden = true;
   openModal('editModal');
   $('editPostInput').focus();
@@ -1270,18 +1494,30 @@ function editPost(id) {
 function saveEdit(e) {
   e.preventDefault();
   const p = findPost(editingPostId), text = $('editPostInput').value.trim();
+  if (!p) { editingPostId = null; closeAllModals(); return; }
+  const er = $('editError');
+  if (!text && !p.media) {
+    er.textContent = 'A post without an image cannot be empty.';
+    er.hidden = false;
+    return;
+  }
   if (text.length > MAX_POST) {
-    const er = $('editError');
     er.textContent = 'Posts are limited to ' + MAX_POST + ' characters. Shorten it to save.';
     er.hidden = false;
     return;
   }
-  if (p && text && text !== p.content) {
-    p.edits = (p.edits || []).concat({ text: p.content, time: new Date().toISOString() });
-    p.content = text;
+  const nextAlt = p.media ? $('editAltInput').value.trim().slice(0, 300) : undefined;
+  const textChanged = text !== p.content;
+  const altChanged = p.media && nextAlt !== (p.media.alt || '');
+  if (textChanged || altChanged) {
+    if (textChanged) {
+      p.edits = (p.edits || []).concat({ text: p.content, time: new Date().toISOString() });
+      p.content = text;
+    }
+    if (altChanged) p.media.alt = nextAlt;
     rerender();
     const id = p.id;
-    queue(() => ({ action: 'EDIT_POST', id: realId(id), content: text }), mergeAndRender);
+    queue(() => ({ action: 'EDIT_POST', id: realId(id), content: text, alt: nextAlt }), mergeAndRender);
   }
   editingPostId = null;
   closeAllModals();
@@ -1296,6 +1532,28 @@ function showHistory(id) {
   });
   $('modalHistoryContent').innerHTML = html;
   openModal('historyModal');
+}
+function showAltModal(id) {
+  const p = findPost(id);
+  if (!p || !p.media || !p.media.alt) return;
+  $('altModalText').textContent = p.media.alt;
+  openModal('altModal');
+}
+function openLightbox(id) {
+  const p = findPost(id);
+  if (!p || !p.media) return;
+  const img = $('lightboxImg');
+  const src = mediaSrc(p.media, 1600);
+  img.onerror = p.media.id
+    ? () => { if (!img.dataset.fb) { img.dataset.fb = '1'; img.src = `https://drive.google.com/thumbnail?id=${encodeURIComponent(p.media.id)}&sz=w1600`; } }
+    : null;
+  delete img.dataset.fb;
+  img.src = src;
+  img.alt = p.media.alt || 'Post image';
+  const cap = $('lightboxCaption');
+  if (p.media.alt) { cap.textContent = p.media.alt; cap.hidden = false; }
+  else { cap.textContent = ''; cap.hidden = true; }
+  openModal('lightboxModal');
 }
 function switchFeed(type) {
   currentFeed = type;
@@ -1591,7 +1849,8 @@ function clearCache() { try { localStorage.removeItem(CACHE_KEY); } catch (e) {}
 /* ---------- composer: counter + draft autosave ---------- */
 function updateComposerMeta() {
   const ta = $('postContent'), n = ta.value.length, c = $('charCount');
-  $('publishBtn').disabled = !ta.value.trim();
+  const hasContent = ta.value.trim().length > 0 || !!(pendingMedia && pendingMedia.dataUrl);
+  $('publishBtn').disabled = !hasContent || compressingMedia;
   c.textContent = n ? n + '/' + MAX_POST : '';
   c.classList.toggle('warn', n >= MAX_POST - 20);
 }
@@ -1664,7 +1923,7 @@ function openModal(id, noHistory) {
 function hideModals() {
   peopleModalHandle = null; circleModalSnapshot = [];
   if (confirmResolve) { const r = confirmResolve; confirmResolve = null; r(false); }
-  document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.modal-overlay.open, .lightbox-overlay.open').forEach(m => m.classList.remove('open'));
   document.body.classList.remove('modal-open');
 }
 function closeAllModals() {
@@ -1711,6 +1970,8 @@ function runAction(el) {
   else if (a === 'recirculate') toggleRecirculate(id);
   else if (a === 'edit') editPost(id);
   else if (a === 'history') showHistory(id);
+  else if (a === 'show-alt') showAltModal(id);
+  else if (a === 'lightbox') openLightbox(id);
   else if (a === 'delete') deletePost(id);
   else if (a === 'tag') setTag(el.dataset.tag);
 }
@@ -1760,6 +2021,9 @@ $('headerBackBtn').addEventListener('click', goBack);
 $('headerControlsContainer').addEventListener('click', e => { const b = e.target.closest('[data-feed]'); if (b) switchFeed(b.dataset.feed); });
 $('avatarBtn').addEventListener('click', () => $('avatarInput').click());
 $('avatarInput').addEventListener('change', handleAvatarUpload);
+$('addImageBtn').addEventListener('click', () => $('postImageInput').click());
+$('postImageInput').addEventListener('change', handlePostImageSelect);
+$('removeMediaBtn').addEventListener('click', () => clearComposerMedia(false));
 $('editProfileBtn').addEventListener('click', openProfileModal);
 $('profileForm').addEventListener('submit', saveProfile);
 $('signOutBtn').addEventListener('click', () => signOut(''));
@@ -1777,8 +2041,9 @@ $('postAudience').addEventListener('change', updateAudienceHint);
 const composerInput = $('postContent');
 composerInput.addEventListener('input', () => { autosize(composerInput); updateComposerMeta(); saveDraft(); });
 composerInput.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); createPost(); } });
+$('postAltInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); createPost(); } });
 
-document.querySelectorAll('.modal-overlay').forEach(o => {
+document.querySelectorAll('.modal-overlay, .lightbox-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o || e.target.closest('[data-close]')) closeAllModals(); });
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
