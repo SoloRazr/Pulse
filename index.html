@@ -215,6 +215,7 @@ main {
 .reply-composer input:focus, .form-group input:focus, .form-group textarea:focus { box-shadow: inset 0 0 0 2px var(--accent); }
 
 .btn-secondary.active { background: var(--accent-soft); color: var(--accent); }
+.btn-secondary.circle-active { background: var(--circle-soft); color: var(--circle); }
 .profile-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .audience-hint { font-size: .78rem; color: var(--muted); }
 
@@ -239,8 +240,12 @@ main {
 .hero-name { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
 .hero-handle { color: var(--muted); font-size: .95rem; overflow-wrap: anywhere; }
 .hero-bio { font-size: 1rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 4px; }
-.hero-stats { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; padding-top: 12px; border-top: var(--hair) solid var(--line); color: var(--muted); font-size: .9rem; }
+.hero-stats { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; margin-top: 10px; padding-top: 12px; border-top: var(--hair) solid var(--line); color: var(--muted); font-size: .9rem; }
 .hero-stats b { color: var(--text); font-family: var(--font-display); font-size: 1.05rem; }
+.stat-btn { display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 8px; margin: -4px -8px; border-radius: var(--r-sm); color: var(--muted); transition: background-color .15s, color .15s, transform .1s; }
+.stat-btn:hover { background: var(--surface-2); color: var(--text); }
+.stat-btn:hover b { color: var(--accent); }
+.stat-btn:active { transform: scale(.97); }
 #profileView { display: flex; flex-direction: column; gap: 14px; }
 .section-title { font-family: var(--font-display); font-size: 1rem; color: var(--muted); padding: 4px 4px 0; }
 .profile-link { cursor: pointer; }
@@ -312,6 +317,13 @@ main {
 @media (prefers-color-scheme: dark) { .avatar.hue { background: hsl(var(--hue) 35% 22%); color: hsl(var(--hue) 70% 85%); } }
 .load-more { align-self: center; margin: 4px 0 8px; min-width: 180px; }
 .list-note { text-align: center; color: var(--muted); font-size: .8rem; padding: 4px; }
+
+/* People modal */
+#peopleModalTabs { display: flex; margin-bottom: 14px; }
+#peopleModalTabs button { flex: 1; }
+#peopleListContent { display: flex; flex-direction: column; gap: 10px; }
+#peopleListContent .member-row { background: var(--surface-2); box-shadow: none; }
+#peopleListContent .member-row:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
 
 /* Rich text, pill, tag filter, counter */
 .post-content a, .reply-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
@@ -552,6 +564,14 @@ main {
   </div>
 </div>
 
+<div class="modal-overlay" id="peopleModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="peopleModalTitle">
+    <div class="modal-header"><h3 id="peopleModalTitle">People</h3><button class="close-btn" data-close aria-label="Close">&times;</button></div>
+    <div class="seg" id="peopleModalTabs"></div>
+    <div id="peopleListContent"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="confirmModal">
   <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMsg">
     <div class="modal-header"><h3 id="confirmTitle"></h3><button class="close-btn" data-close aria-label="Close">&times;</button></div>
@@ -599,6 +619,7 @@ let activeReplyPostId = null, editingPostId = null, loaded = false, snapshot = '
 let tab = 'home', threadPostId = null, searchQuery = '', searchMode = 'members', searchIds = [], searchDone = '', searchSeq = 0, searchTimer = null;
 let activity = { items: [], unread: 0, seen: '' }, activitySeenPrev = '', extraPosts = {}, threadFocus = false, threadError = '';
 let hasMore = false, loadingMore = false, profileMore = {};
+let peopleModalHandle = null, peopleModalTab = 'followers', circleModalSnapshot = [];
 let chain = Promise.resolve(), pending = 0;
 const idMap = {};
 const realId = (id) => idMap[id] || id;
@@ -627,6 +648,16 @@ const userOf = (h) => users[h] || { handle: h, name: String(h).replace('@', ''),
 const initial = (u) => (String(u.name || u.handle || 'U').trim().charAt(0) || 'U').toUpperCase();
 const safeImg = (s) => /^data:image\//.test(s || '') ? s : '';
 const isTmp = (id) => String(id).indexOf('tmp_') === 0;
+
+function dirEntry(handle) {
+  const canon = dirMap[String(handle).toLowerCase()];
+  if (canon) {
+    const row = directory.find(d => d[0] === canon);
+    if (row) return row;
+  }
+  const u = userOf(handle);
+  return [u.handle, u.name, typeof u.trust === 'number' ? u.trust : 50];
+}
 
 function formatTime(ts) {
   const d = new Date(ts);
@@ -699,6 +730,7 @@ function signOut(msg) {
   clearToken(); clearCache(); clearDraft(); token = ''; me = null; users = {}; posts = []; directory = []; dirMap = {}; loaded = false;
   activeTag = null; draftRestored = false; showPill(0);
   tab = 'home'; threadPostId = null; extraPosts = {}; hasMore = false; profileMore = {}; searchQuery = ''; searchIds = []; activity = { items: [], unread: 0, seen: '' };
+  peopleModalHandle = null; circleModalSnapshot = [];
   $('postContent').value = ''; updateComposerMeta();
   viewingProfileHandle = null; activeReplyPostId = null;
   closeAllModals();
@@ -911,11 +943,13 @@ function canViewPost(post) {
 }
 function refreshProfileAndFeed() {
   if (viewingProfileHandle) renderProfileView();
+  if (peopleModalHandle) renderPeopleModal();
   rerender();
 }
 function applyRelationResult(res, last) {
   if (last && res.me) {
     Object.assign(me, res.me); me.following = me.following || []; me.circle = me.circle || [];
+    me.followingList = me.following.slice();
     users[me.handle] = me;
   }
   needsReload = true;
@@ -924,9 +958,17 @@ function toggleFollow(handle) {
   if (!me || handle === me.handle) return;
   const follow = !me.following.includes(handle);
   me.following = follow ? me.following.concat(handle) : me.following.filter(h => h !== handle);
+  me.followingList = me.following.slice();
   const tu = users[handle];
-  if (tu) tu.followers = Math.max(0, (tu.followers || 0) + (follow ? 1 : -1));
-  me.followingCount = Math.max(0, (me.followingCount || 0) + (follow ? 1 : -1));
+  if (tu) {
+    tu.followers = Math.max(0, (tu.followers || 0) + (follow ? 1 : -1));
+    if (Array.isArray(tu.followersList)) {
+      tu.followersList = follow
+        ? (tu.followersList.includes(me.handle) ? tu.followersList : tu.followersList.concat(me.handle))
+        : tu.followersList.filter(h => h !== me.handle);
+    }
+  }
+  me.followingCount = me.following.length;
   refreshProfileAndFeed();
   queue(() => ({ action: 'SET_FOLLOW', targetHandle: handle, follow }), applyRelationResult);
 }
@@ -936,6 +978,61 @@ function toggleCircle(handle) {
   me.circle = add ? me.circle.concat(handle) : me.circle.filter(h => h !== handle);
   refreshProfileAndFeed();
   queue(() => ({ action: 'SET_CIRCLE', targetHandle: handle, add }), applyRelationResult);
+}
+
+/* ---------- people modal (followers / following / private circle) ---------- */
+function openPeopleModal(handle, initialTab) {
+  const canon = aliasOf(handle);
+  const isSelf = me && canon === me.handle;
+  peopleModalHandle = canon;
+  peopleModalTab = (initialTab === 'circle' && !isSelf) ? 'followers' : (initialTab || 'followers');
+  circleModalSnapshot = isSelf ? (me.circle || []).slice() : [];
+  renderPeopleModal();
+  openModal('peopleModal');
+}
+
+function renderPeopleModal() {
+  if (!peopleModalHandle || !me) return;
+  const u = userOf(peopleModalHandle);
+  const isSelf = u.handle === me.handle;
+  $('peopleModalTitle').textContent = isSelf ? 'Your People' : u.name;
+
+  const flwList = Array.isArray(u.followersList) ? u.followersList : null;
+  const flgList = isSelf ? (me.following || []) : (Array.isArray(u.followingList) ? u.followingList : null);
+  const flwCount = flwList ? flwList.length : (u.followers || 0);
+  const flgCount = flgList ? flgList.length : (u.followingCount || 0);
+  const cirCount = isSelf ? (me.circle || []).length : 0;
+
+  let tabsHTML =
+    `<button class="${peopleModalTab === 'followers' ? 'active' : ''}" data-action="people-tab" data-tab="followers">Followers (${flwCount})</button>` +
+    `<button class="${peopleModalTab === 'following' ? 'active' : ''}" data-action="people-tab" data-tab="following">Following (${flgCount})</button>`;
+  if (isSelf) {
+    tabsHTML += `<button class="${peopleModalTab === 'circle' ? 'active' : ''}" data-action="people-tab" data-tab="circle">Circle (${cirCount})</button>`;
+  }
+  $('peopleModalTabs').innerHTML = tabsHTML;
+
+  const box = $('peopleListContent');
+  if (peopleModalTab === 'circle' && isSelf) {
+    const activeSet = new Set(directory.map(d => d[0]));
+    const handles = circleModalSnapshot.slice();
+    (me.circle || []).forEach(h => { if (!handles.includes(h)) handles.push(h); });
+    const shown = handles.filter(h => activeSet.has(h));
+    box.innerHTML = shown.length
+      ? shown.map(h => memberRowHTML(dirEntry(h), { circleToggle: true })).join('')
+      : '<div class="empty small">Your close circle is empty. Add trusted friends from their profile page.</div>';
+    return;
+  }
+
+  const rawList = peopleModalTab === 'followers' ? flwList : flgList;
+  if (rawList === null) {
+    box.innerHTML = '<div class="empty small">Loading…</div>';
+    return;
+  }
+  const activeSet = new Set(directory.map(d => d[0]));
+  const shown = rawList.filter(h => activeSet.has(h));
+  box.innerHTML = shown.length
+    ? shown.map(h => memberRowHTML(dirEntry(h))).join('')
+    : `<div class="empty small">${peopleModalTab === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}</div>`;
 }
 
 /* ---------- views ---------- */
@@ -1018,6 +1115,9 @@ function renderProfileView() {
     : `<button class="btn-secondary${following ? ' active' : ''}" data-action="toggle-follow" data-handle="${esc(u.handle)}">${following ? ICON_CHECK + ' Following' : '+ Follow'}</button>
        <button class="btn-secondary${inCircle ? ' active' : ''}" data-action="toggle-circle" data-handle="${esc(u.handle)}" title="People in your close circle can see your Close Circle posts">${ICON_USERS}${inCircle ? ' In circle' : ' Add to circle'}</button>`;
   const joined = u.joined ? ' · Joined ' + esc(fmtJoined(u.joined)) : '';
+  const circleStat = isSelf
+    ? `<button class="stat-btn" data-action="people-list" data-tab="circle" data-handle="${esc(u.handle)}"><b>${(me.circle || []).length}</b> Circle</button>`
+    : '';
   $('profileView').innerHTML =
     `<div class="card hero" style="--hue:${hueOf(u.handle)}">
       <div class="hero-banner"></div>
@@ -1026,7 +1126,12 @@ function renderProfileView() {
         <div class="hero-name-row"><h1 class="hero-name">${esc(u.name)}</h1>${u.reputation ? `<span class="reputation-badge">${esc(u.reputation)}</span>` : ''}</div>
         <div class="hero-handle">${esc(u.handle)}${joined}</div>
         ${u.bio ? `<p class="hero-bio">${esc(u.bio)}</p>` : ''}
-        <div class="hero-stats"><span><b>${u.posts || 0}</b> Posts</span><span><b>${u.followers || 0}</b> Followers</span><span><b>${u.followingCount || 0}</b> Following</span></div>
+        <div class="hero-stats">
+          <span><b>${u.posts || 0}</b> Posts</span>
+          <button class="stat-btn" data-action="people-list" data-tab="followers" data-handle="${esc(u.handle)}"><b>${u.followers || 0}</b> Followers</button>
+          <button class="stat-btn" data-action="people-list" data-tab="following" data-handle="${esc(u.handle)}"><b>${u.followingCount || 0}</b> Following</button>
+          ${circleStat}
+        </div>
       </div>
     </div>
     <h2 class="section-title">Posts</h2>`;
@@ -1282,7 +1387,8 @@ async function ensureProfile(handle) {
       const r2 = await api({ action: 'GET_PROFILE', token, handle, before: oldestKey(held) });
       if (r2.status === 'success') { ingestUsers(r2.users); ingestPosts(r2.posts); profileMore[pkey] = !!r2.hasMore; }
     }
-    if (!threadPostId && viewingProfileHandle && viewingProfileHandle.toLowerCase() === String(handle).toLowerCase()) rerender();
+    if (!threadPostId && viewingProfileHandle && viewingProfileHandle.toLowerCase() === pkey) rerender();
+    if (peopleModalHandle && peopleModalHandle.toLowerCase() === pkey) renderPeopleModal();
   } catch (e) { /* the profile still shows what we already have */ }
 }
 
@@ -1376,11 +1482,19 @@ function renderActivity() {
 }
 
 /* ---------- search + member directory ---------- */
-function memberRowHTML(d) {
+function memberRowHTML(d, opts) {
+  opts = opts || {};
   const h = d[0], name = d[1], t = d[2] === undefined ? 50 : d[2], u = users[h], img = u && safeImg(u.avatar);
   const face = img ? `<img src="${esc(img)}" alt="">` : esc(String(name || h).trim().charAt(0).toUpperCase());
-  const following = me.following.includes(h);
-  const btn = h === me.handle ? '' : `<button class="btn-secondary btn-sm${following ? ' active' : ''}" data-action="toggle-follow" data-handle="${esc(h)}">${following ? '✓ Following' : '+ Follow'}</button>`;
+  const following = me.following.includes(h), inCircle = me.circle.includes(h);
+  let btn = '';
+  if (h !== me.handle) {
+    if (opts.circleToggle) {
+      btn = `<button class="btn-secondary btn-sm${inCircle ? ' circle-active' : ''}" data-action="toggle-circle" data-handle="${esc(h)}">${inCircle ? '✓ In circle' : '+ Circle'}</button>`;
+    } else {
+      btn = `<button class="btn-secondary btn-sm${following ? ' active' : ''}" data-action="toggle-follow" data-handle="${esc(h)}">${following ? '✓ Following' : '+ Follow'}</button>`;
+    }
+  }
   return `<div class="card member-row" role="button" tabindex="0" data-action="profile" data-handle="${esc(h)}"><div class="avatar sm hue" style="--hue:${hueOf(h)}">${face}</div>
     <div class="member-main"><div class="name">${esc(name)}</div><div class="handle">${esc(h)}</div></div>
     <span class="reputation-badge" title="Computed from reactions received">Trust ${t}</span>${btn}</div>`;
@@ -1548,6 +1662,7 @@ function openModal(id, noHistory) {
   if (!noHistory) histPush('modal', curView()); // so back closes the sheet instead of leaving
 }
 function hideModals() {
+  peopleModalHandle = null; circleModalSnapshot = [];
   if (confirmResolve) { const r = confirmResolve; confirmResolve = null; r(false); }
   document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
   document.body.classList.remove('modal-open');
@@ -1583,6 +1698,7 @@ function runAction(el) {
   if (a === 'profile') viewUserProfile(el.dataset.handle);
   else if (a === 'edit-profile') openProfileModal();
   else if (a === 'change-avatar') $('avatarInput').click();
+  else if (a === 'people-list') openPeopleModal(el.dataset.handle, el.dataset.tab);
   else if (a === 'toggle-follow') toggleFollow(el.dataset.handle);
   else if (a === 'toggle-circle') toggleCircle(el.dataset.handle);
   else if (a === 'open-thread') openThread(id);
@@ -1613,6 +1729,30 @@ $('mainArea').addEventListener('keydown', e => {
 $('mainArea').addEventListener('input', e => {
   if (e.target.id === 'threadReplyInput') updateReplyMeta();
   else if (e.target.id === 'searchInput') onSearchInput();
+});
+$('peopleModal').addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const a = el.dataset.action;
+  if (a === 'people-tab') { peopleModalTab = el.dataset.tab; renderPeopleModal(); }
+  else if (a === 'toggle-follow') toggleFollow(el.dataset.handle);
+  else if (a === 'toggle-circle') toggleCircle(el.dataset.handle);
+  else if (a === 'profile') {
+    const h = aliasOf(el.dataset.handle);
+    const wasModal = history.state && history.state.kind === 'modal';
+    hideModals();
+    navigate({ handle: h }, { replace: wasModal });
+  }
+});
+$('peopleModal').addEventListener('keydown', e => {
+  const el = e.target.closest('[data-action="profile"]');
+  if (el && (e.key === 'Enter' || e.key === ' ') && e.target === el) {
+    e.preventDefault();
+    const h = aliasOf(el.dataset.handle);
+    const wasModal = history.state && history.state.kind === 'modal';
+    hideModals();
+    navigate({ handle: h }, { replace: wasModal });
+  }
 });
 $('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) goTab(b.dataset.tab); });
 $('logoBtn').addEventListener('click', goHome);
