@@ -740,6 +740,24 @@ function mediaSrc(m, size) {
   return `https://lh3.googleusercontent.com/d/${encodeURIComponent(m.id)}=w${size || 1024}`;
 }
 
+function resolveDriveMedia(imgEl, mediaId, size) {
+  const step = Number(imgEl.dataset.fb || 0);
+  if (step === 0) {
+    imgEl.dataset.fb = '1';
+    imgEl.src = `https://drive.google.com/thumbnail?id=${encodeURIComponent(mediaId)}&sz=w${size || 1024}`;
+    return;
+  }
+  if (step === 1 && token && !localMediaPreviews[mediaId]) {
+    imgEl.dataset.fb = '2';
+    api({ action: 'GET_MEDIA', token, id: mediaId }).then(res => {
+      if (res && res.status === 'success' && res.dataUrl) {
+        localMediaPreviews[mediaId] = res.dataUrl;
+        imgEl.src = res.dataUrl;
+      }
+    }).catch(() => {});
+  }
+}
+
 function dirEntry(handle) {
   const canon = dirMap[String(handle).toLowerCase()];
   if (canon) {
@@ -1364,7 +1382,7 @@ function postMediaHTML(post, id) {
   const src = mediaSrc(m, 1024);
   const alt = m.alt ? esc(m.alt) : 'Post image';
   const fallback = m.id
-    ? ` onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src='https://drive.google.com/thumbnail?id=${esc(m.id)}&sz=w1024';}"`
+    ? ` onerror="resolveDriveMedia(this,'${esc(m.id)}',1024)"`
     : '';
   const altBtn = m.alt
     ? `<button type="button" class="alt-badge" data-action="show-alt" data-id="${id}" title="View image description" aria-label="View image description">ALT</button>`
@@ -1544,9 +1562,7 @@ function openLightbox(id) {
   if (!p || !p.media) return;
   const img = $('lightboxImg');
   const src = mediaSrc(p.media, 1600);
-  img.onerror = p.media.id
-    ? () => { if (!img.dataset.fb) { img.dataset.fb = '1'; img.src = `https://drive.google.com/thumbnail?id=${encodeURIComponent(p.media.id)}&sz=w1600`; } }
-    : null;
+  img.onerror = p.media.id ? () => resolveDriveMedia(img, p.media.id, 1600) : null;
   delete img.dataset.fb;
   img.src = src;
   img.alt = p.media.alt || 'Post image';
